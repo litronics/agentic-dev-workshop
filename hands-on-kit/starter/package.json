@@ -1,0 +1,9 @@
+{
+  "name": "agent-system-starter",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Throwaway app for the agentic-dev hands-on. The point is the .claude/ setup, not the app.",
+  "scripts": {
+    "test": "node --test"
+  }
+}
