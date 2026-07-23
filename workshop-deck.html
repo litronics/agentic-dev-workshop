@@ -1,0 +1,898 @@
+<meta charset="utf-8">
+<title>Agentische Entwicklung — Workshop</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --paper:#f4f2ee; --surface:#ffffff; --surface-2:#faf8f4;
+    --ink:#191d24; --muted:#59626f; --faint:#8b94a1;
+    --line:#dcd8d0; --line-strong:#c6c1b6;
+    --accent:#b9741a; --accent-ink:#8f5810; --accent-soft:rgba(185,116,26,.12);
+    --cool:#2c6b7e; --cool-soft:rgba(44,107,126,.10);
+    --pass:#2f8f5b; --collide:#c0392b; --collide-soft:rgba(192,57,43,.10);
+    --shadow:0 1px 0 rgba(0,0,0,.03), 0 18px 44px -28px rgba(20,24,32,.45);
+    --font-display:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --font-body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0e1116; --surface:#161b22; --surface-2:#1b212a;
+      --ink:#e9eaee; --muted:#9aa4b1; --faint:#69727f;
+      --line:#2a313b; --line-strong:#3a424e;
+      --accent:#e5a23a; --accent-ink:#f0bd6b; --accent-soft:rgba(229,162,58,.15);
+      --cool:#4fa3ba; --cool-soft:rgba(79,163,186,.14);
+      --pass:#4bb37c; --collide:#e0655a; --collide-soft:rgba(224,101,90,.14);
+      --shadow:0 1px 0 rgba(0,0,0,.4), 0 24px 60px -30px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#f4f2ee; --surface:#ffffff; --surface-2:#faf8f4;
+    --ink:#191d24; --muted:#59626f; --faint:#8b94a1;
+    --line:#dcd8d0; --line-strong:#c6c1b6;
+    --accent:#b9741a; --accent-ink:#8f5810; --accent-soft:rgba(185,116,26,.12);
+    --cool:#2c6b7e; --cool-soft:rgba(44,107,126,.10);
+    --pass:#2f8f5b; --collide:#c0392b; --collide-soft:rgba(192,57,43,.10);
+    --shadow:0 1px 0 rgba(0,0,0,.03), 0 18px 44px -28px rgba(20,24,32,.45);
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e1116; --surface:#161b22; --surface-2:#1b212a;
+    --ink:#e9eaee; --muted:#9aa4b1; --faint:#69727f;
+    --line:#2a313b; --line-strong:#3a424e;
+    --accent:#e5a23a; --accent-ink:#f0bd6b; --accent-soft:rgba(229,162,58,.15);
+    --cool:#4fa3ba; --cool-soft:rgba(79,163,186,.14);
+    --pass:#4bb37c; --collide:#e0655a; --collide-soft:rgba(224,101,90,.14);
+    --shadow:0 1px 0 rgba(0,0,0,.4), 0 24px 60px -30px rgba(0,0,0,.8);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--paper); color:var(--ink); font-family:var(--font-body);
+    overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+
+  /* progress */
+  #bar{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:40;transition:width .25s ease}
+  @media (prefers-reduced-motion:reduce){#bar{transition:none}}
+
+  #deck{position:fixed;inset:0;display:grid;place-items:center;padding:8px}
+  #stage{width:1280px;height:720px;position:relative;transform-origin:center center}
+
+  .slide{
+    position:absolute;inset:0;padding:76px 92px 68px;
+    display:flex;flex-direction:column;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    box-shadow:var(--shadow);
+    opacity:0;visibility:hidden;
+  }
+  .slide.active{opacity:1;visibility:visible}
+  @media (prefers-reduced-motion:no-preference){
+    .slide{transition:opacity .28s ease}
+  }
+
+  .eyebrow{
+    font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--cool);display:flex;align-items:center;gap:11px;
+  }
+  .eyebrow .dot{width:9px;height:9px;border-radius:50%;background:var(--cool);flex:0 0 auto}
+  .headline{
+    font-family:var(--font-display);font-weight:600;line-height:1.08;letter-spacing:-.01em;
+    text-wrap:balance;margin:16px 0 0;font-size:46px;max-width:22ch;
+  }
+  .headline.sm{font-size:38px;max-width:26ch}
+  .lede{font-size:22px;line-height:1.5;color:var(--muted);margin:18px 0 0;max-width:60ch}
+  .body{margin-top:26px;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+  .body.top{justify-content:flex-start}
+
+  ul.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
+  ul.pts li{position:relative;padding-left:30px;font-size:22px;line-height:1.45;max-width:64ch}
+  ul.pts li::before{content:"";position:absolute;left:0;top:11px;width:12px;height:12px;border-radius:3px;background:var(--accent)}
+  ul.pts li b{font-weight:600}
+  ul.pts li .k{font-family:var(--font-display);color:var(--accent-ink);font-weight:600}
+
+  .kicker{margin-top:24px;font-size:20px;line-height:1.5;color:var(--ink);
+    border-left:3px solid var(--accent);padding:6px 0 6px 18px;background:var(--accent-soft);
+    border-radius:0 8px 8px 0;max-width:70ch}
+  .kicker.cool{border-color:var(--cool);background:var(--cool-soft)}
+
+  code,.mono{font-family:var(--font-display);font-size:.92em}
+  .chip{font-family:var(--font-display);font-size:14px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:999px;padding:6px 12px;color:var(--muted);white-space:nowrap}
+
+  /* two-column */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:26px;flex:1;min-height:0;align-content:center}
+  .panel{border:1px solid var(--line);border-radius:12px;padding:22px 24px;background:var(--surface-2);display:flex;flex-direction:column;gap:12px}
+  .panel h3{margin:0;font-family:var(--font-display);font-size:16px;letter-spacing:.08em;text-transform:uppercase}
+  .panel.good h3{color:var(--pass)} .panel.bad h3{color:var(--collide)}
+  .panel ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .panel li{font-size:18px;line-height:1.4;color:var(--ink);padding-left:18px;position:relative}
+  .panel li::before{content:"";position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.5}
+
+  /* tables */
+  table.cmp{width:100%;border-collapse:collapse;font-size:18px;flex:0 0 auto}
+  table.cmp th{font-family:var(--font-display);font-size:13px;letter-spacing:.09em;text-transform:uppercase;
+    text-align:left;padding:0 16px 12px;color:var(--muted);border-bottom:2px solid var(--line-strong)}
+  table.cmp td{padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.4}
+  table.cmp tr td:first-child{color:var(--muted)}
+  table.cmp .new{color:var(--ink);font-weight:500}
+  table.cmp .k{font-family:var(--font-display);color:var(--accent-ink);font-weight:600}
+  table.cmp col.c1{width:42%} table.cmp col.c2{width:29%} table.cmp col.c3{width:29%}
+
+  /* pillar list */
+  ol.pillars{list-style:none;margin:0;padding:0;counter-reset:p;display:flex;flex-direction:column;gap:14px}
+  ol.pillars li{counter-increment:p;display:flex;align-items:center;gap:20px;font-size:24px;
+    padding:14px 20px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+  ol.pillars li::before{content:counter(p);font-family:var(--font-display);font-weight:600;font-size:20px;
+    width:42px;height:42px;flex:0 0 auto;display:grid;place-items:center;border-radius:10px;
+    background:var(--accent-soft);color:var(--accent-ink)}
+  ol.pillars li b{font-weight:600} ol.pillars li span{color:var(--muted);font-size:19px}
+  ol.pillars li.hl{border-color:var(--accent);background:var(--accent-soft)}
+  ol.pillars li.hl::before{background:var(--accent);color:#fff}
+
+  /* cards */
+  .cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;flex:1;align-content:center}
+  .card{border:1px solid var(--line);border-radius:12px;padding:20px;background:var(--surface-2);display:flex;flex-direction:column;gap:10px}
+  .card .tag{font-family:var(--font-display);font-size:13px;letter-spacing:.06em;color:var(--collide);text-transform:uppercase;font-weight:600}
+  .card h4{margin:0;font-size:19px;line-height:1.25}
+  .card p{margin:0;font-size:16px;line-height:1.45;color:var(--muted)}
+  .card .fix{font-family:var(--font-display);font-size:14px;color:var(--pass);margin-top:auto}
+
+  .chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+  .chips .chip{font-size:16px;padding:9px 15px;color:var(--ink);border-color:var(--line-strong)}
+  .chips .chip b{color:var(--accent-ink)}
+
+  /* title slide */
+  .slide.title{justify-content:center;align-items:flex-start;
+    background:
+      radial-gradient(120% 120% at 90% -10%, var(--accent-soft), transparent 55%),
+      radial-gradient(90% 90% at -10% 110%, var(--cool-soft), transparent 55%),
+      var(--surface);
+  }
+  .slide.title .eyebrow{font-size:16px}
+  .slide.title h1{font-family:var(--font-display);font-weight:600;font-size:60px;line-height:1.04;
+    letter-spacing:-.015em;margin:22px 0 0;max-width:20ch;text-wrap:balance}
+  .slide.title .sub{font-size:24px;color:var(--muted);margin:24px 0 0;max-width:58ch;line-height:1.5}
+  .slide.title .meta{margin-top:40px;display:flex;gap:12px;flex-wrap:wrap}
+  .slide.title .keys{position:absolute;left:92px;bottom:56px;font-family:var(--font-display);font-size:14px;color:var(--faint)}
+  .slide.title .keys b{color:var(--muted);font-weight:600}
+
+  /* diagrams */
+  .diagram{flex:1;min-height:0;display:grid;place-items:center;margin-top:8px}
+  .diagram svg{width:100%;height:100%;max-height:340px}
+  svg .d-box{fill:var(--surface-2);stroke:var(--line-strong);stroke-width:1.5}
+  svg .d-box-acc{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+  svg .d-box-cool{fill:var(--cool-soft);stroke:var(--cool);stroke-width:1.5}
+  svg .d-box-bad{fill:var(--collide-soft);stroke:var(--collide);stroke-width:1.5}
+  svg .d-line{stroke:var(--line-strong);stroke-width:1.6;fill:none}
+  svg .d-line-dash{stroke:var(--muted);stroke-width:1.6;fill:none;stroke-dasharray:6 5}
+  svg .d-flow{stroke:var(--accent);stroke-width:2;fill:none}
+  svg .d-t{fill:var(--ink);font-family:var(--font-body);font-size:15px}
+  svg .d-t.mono{font-family:var(--font-display)}
+  svg .d-t.mut{fill:var(--muted);font-size:13px}
+  svg .d-t.acc{fill:var(--accent-ink);font-weight:600}
+  svg .d-t.bad{fill:var(--collide);font-weight:600}
+  svg .d-t.hd{font-family:var(--font-display);font-weight:600;font-size:16px}
+
+  .body-diagram{display:grid;grid-template-columns:1fr 1fr;gap:30px;flex:1;min-height:0;align-items:center}
+  .body-diagram .diagram{margin-top:0}
+
+  /* impuls tag + hud */
+  .tag-impuls{position:absolute;top:30px;right:34px;font-family:var(--font-display);font-size:12px;
+    letter-spacing:.12em;color:var(--accent-ink);border:1px solid var(--accent);border-radius:999px;
+    padding:4px 11px;background:var(--accent-soft);display:none}
+  .slide[data-impulse] .tag-impuls{display:block}
+
+  #hud{position:fixed;bottom:14px;left:0;right:0;display:flex;justify-content:space-between;
+    align-items:center;padding:0 22px;font-family:var(--font-display);font-size:13px;color:var(--faint);z-index:30;pointer-events:none}
+  #hud .sec{color:var(--muted)}
+  #hud .right{display:flex;gap:14px;align-items:center;pointer-events:auto}
+  #hud button{font-family:var(--font-display);font-size:12px;color:var(--muted);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer;letter-spacing:.05em}
+  #hud button:hover{border-color:var(--accent);color:var(--accent-ink)}
+  #hud button:focus-visible,#ovl button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #mode-badge{color:var(--accent-ink);border-color:var(--accent)!important}
+  #counter{cursor:pointer;color:var(--muted)}
+
+  /* overview */
+  #ovl{position:fixed;inset:0;background:color-mix(in srgb,var(--paper) 92%,transparent);
+    backdrop-filter:blur(3px);z-index:50;display:none;padding:44px 52px;overflow:auto}
+  #ovl.open{display:block}
+  #ovl h2{font-family:var(--font-display);font-size:16px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 20px}
+  #ovl .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  #ovl button{text-align:left;font-family:var(--font-body);font-size:14px;line-height:1.3;color:var(--ink);
+    background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:12px 14px;cursor:pointer;min-height:70px;display:flex;flex-direction:column;gap:6px}
+  #ovl button:hover{border-color:var(--accent)}
+  #ovl button .n{font-family:var(--font-display);font-size:12px;color:var(--faint)}
+  #ovl button.imp .n{color:var(--accent-ink)}
+
+  @media (max-width:520px){
+    #hud .right button.txt{display:none}
+  }
+</style>
+
+<div id="bar"></div>
+<div id="deck">
+  <div id="stage">
+
+    <!-- 1 TITLE -->
+    <section class="slide title" data-impulse data-sec="Einstieg">
+      <div class="eyebrow"><span class="dot"></span>Workshop · 2 Stunden &nbsp;+&nbsp; 30-Min-Impuls</div>
+      <h1>Agentische Entwicklung</h1>
+      <div class="sub">Ein Multi-Agent-Dev-System bauen und betreiben — was wir in einem realen Produktivprojekt gelernt haben, und wie ihr es auf euer eigenes System übertragt.</div>
+      <div class="meta">
+        <span class="chip">Für erfahrene Devs, neu bei Agenten</span>
+        <span class="chip">VS Code + Claude Code</span>
+      </div>
+      <div class="keys"><b>→</b>&nbsp;/&nbsp;Leertaste weiter&nbsp;&nbsp;·&nbsp;&nbsp;<b>M</b> Impuls/Workshop&nbsp;&nbsp;·&nbsp;&nbsp;<b>T</b> Theme&nbsp;&nbsp;·&nbsp;&nbsp;<b>F</b> Vollbild&nbsp;&nbsp;·&nbsp;&nbsp;<b>Ü</b> Übersicht</div>
+    </section>
+
+    <!-- 2 OPENER -->
+    <section class="slide" data-impulse data-sec="Einstieg · Die Wunde">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Einstieg · Die Wunde</div>
+      <h2 class="headline">„Wo ist mein Code hin?"</h2>
+      <div class="body">
+        <ul class="pts">
+          <li>Agent&nbsp;<b>A</b> ändert eine Datei — <b>committet nicht</b>.</li>
+          <li>Agent&nbsp;<b>B</b> liest dieselbe Datei, <b>sieht die Änderung nicht</b>, baut auf dem alten Stand weiter.</li>
+          <li>Zusammenführen → <span class="k">Konflikt</span>, Doppelarbeit, teils <b>verlorene Arbeit</b>.</li>
+        </ul>
+        <div class="kicker">Das ist <b>kein Tooling-Bug</b>. Es ist die Grundmechanik agentischer Systeme — und der Schlüssel zu allem, was folgt.</div>
+      </div>
+    </section>
+
+    <!-- 3 UNPACK -->
+    <section class="slide" data-impulse data-sec="Einstieg">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Einstieg · Was gerade passierte</div>
+      <h2 class="headline">Jeder Agent hat sein eigenes Gedächtnis</h2>
+      <div class="body">
+        <ul class="pts">
+          <li>Agent B war nicht „dumm" — er <b>konnte</b> A's Arbeit nicht sehen. Sie stand nur in A's Kontext (und uncommittet auf der Platte).</li>
+          <li><b>Kontext ist pro-Agent isoliert.</b></li>
+          <li><b>Was nicht committet ist, existiert für andere nicht.</b></li>
+        </ul>
+        <div class="kicker cool">Fast jede Regel unseres Systems lässt sich aus diesen zwei Sätzen <b>herleiten</b> — nicht auswendig lernen.</div>
+      </div>
+    </section>
+
+    <!-- 4 WHAT IS AN AGENT -->
+    <section class="slide" data-impulse data-sec="Mentales Modell">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Mentales Modell</div>
+      <h2 class="headline">Agent = LLM + Werkzeuge + Schleife</h2>
+      <div class="body">
+        <ul class="pts">
+          <li>Ein <b>LLM</b>, das <b>Werkzeuge</b> aufrufen darf — Dateien lesen/schreiben, Shell, Web —</li>
+          <li>und in einer <b>Schleife</b> arbeitet, bis die Aufgabe erledigt ist.</li>
+          <li>Chatbot <b>antwortet</b>. Agent <span class="k">handelt</span>.</li>
+        </ul>
+        <div class="kicker">Weil ein Agent handelt, muss er kontrolliert werden wie ein <b>Mitarbeiter</b> — nicht genutzt wie eine Suchmaschine.</div>
+      </div>
+    </section>
+
+    <!-- 5 CONTEXT ISOLATION -->
+    <section class="slide" data-impulse data-sec="Mentales Modell · Kernkonzept">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Mentales Modell · Kernkonzept</div>
+      <h2 class="headline sm">Subagenten &amp; Kontext-Isolation</h2>
+      <div class="body-diagram">
+        <ul class="pts">
+          <li><b>Main-Agent</b> koordiniert.</li>
+          <li>Jeder Subagent: <b>eigener Kontext</b> + eigene Werkzeuge + eine Rolle.</li>
+          <li>Subagenten sehen <b>weder einander</b> noch den vollen Verlauf.</li>
+        </ul>
+        <div class="diagram">
+          <svg viewBox="0 0 440 360" role="img" aria-label="Main-Agent mit drei isolierten Subagenten">
+            <rect class="d-box-acc" x="140" y="14" width="160" height="52" rx="10"/>
+            <text class="d-t hd" x="220" y="38" text-anchor="middle">Main-Agent</text>
+            <text class="d-t mut" x="220" y="56" text-anchor="middle">koordiniert · fügt zusammen</text>
+            <path class="d-line" d="M180 66 V110 H70 V150"/>
+            <path class="d-line" d="M220 66 V150"/>
+            <path class="d-line" d="M260 66 V110 H370 V150"/>
+            <g>
+              <rect class="d-box" x="14" y="150" width="112" height="86" rx="10"/>
+              <text class="d-t mono" x="70" y="180" text-anchor="middle">implementer</text>
+              <text class="d-t mut" x="70" y="202" text-anchor="middle">eigener</text>
+              <text class="d-t mut" x="70" y="218" text-anchor="middle">Kontext</text>
+            </g>
+            <g>
+              <rect class="d-box" x="164" y="150" width="112" height="86" rx="10"/>
+              <text class="d-t mono" x="220" y="180" text-anchor="middle">reviewer</text>
+              <text class="d-t mut" x="220" y="202" text-anchor="middle">eigener</text>
+              <text class="d-t mut" x="220" y="218" text-anchor="middle">Kontext</text>
+            </g>
+            <g>
+              <rect class="d-box" x="314" y="150" width="112" height="86" rx="10"/>
+              <text class="d-t mono" x="370" y="180" text-anchor="middle">researcher</text>
+              <text class="d-t mut" x="370" y="202" text-anchor="middle">eigener</text>
+              <text class="d-t mut" x="370" y="218" text-anchor="middle">Kontext</text>
+            </g>
+            <line class="d-line-dash" x1="126" y1="285" x2="314" y2="285"/>
+            <text class="d-t bad" x="220" y="278" text-anchor="middle">keine Verbindung untereinander</text>
+            <text class="d-t mut" x="220" y="326" text-anchor="middle">Isolation = Fokus &amp; begrenzte Fehlerfläche</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 FEATURE + CURSE -->
+    <section class="slide" data-sec="Mentales Modell">
+      <div class="eyebrow"><span class="dot"></span>Mentales Modell</div>
+      <h2 class="headline">Isolation ist Feature <span style="color:var(--muted)">und</span> Fluch</h2>
+      <div class="body">
+        <div class="cols">
+          <div class="panel good">
+            <h3>Feature</h3>
+            <ul>
+              <li>Fokus, kein Rauschen</li>
+              <li>Parallelisierbar</li>
+              <li>Begrenzte Fehlerfläche</li>
+            </ul>
+          </div>
+          <div class="panel bad">
+            <h3>Fluch</h3>
+            <ul>
+              <li>Blind für die Arbeit der anderen</li>
+              <li>„Vergisst" über Sessions</li>
+              <li>Braucht explizite Übergabe</li>
+            </ul>
+          </div>
+        </div>
+        <div class="kicker">Aus dem Fluch folgen direkt: <b>schriftliche Reports</b>, das <b>Commit-Gate</b> und <b>persistentes Memory</b>.</div>
+      </div>
+    </section>
+
+    <!-- 7 NEW VS FAMILIAR -->
+    <section class="slide" data-impulse data-sec="Einordnung">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Einordnung</div>
+      <h2 class="headline sm">Was ist neu — und was kennt ihr längst?</h2>
+      <div class="body top">
+        <table class="cmp">
+          <colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+          <thead><tr><th>Fühlt sich neu an, ist Altbekanntes</th><th colspan="2">Wirklich neu — hier Aufmerksamkeit investieren</th></tr></thead>
+          <tbody>
+            <tr><td>Agent-Team = Separation of Concerns / Microservices</td><td class="new" colspan="2">Kontextverlust als Fehlerklasse</td></tr>
+            <tr><td>Gates = CI-Gates / pre-commit hooks</td><td class="new" colspan="2">Agenten sehen uncommittete Arbeit nicht</td></tr>
+            <tr><td>Worktrees = Feature-Branches</td><td class="new" colspan="2">Plausibel-aber-falsch: überzeugender Unsinn</td></tr>
+            <tr><td>Routing = Dispatcher / Code-Owner</td><td class="new" colspan="2">Persistentes Memory als gepflegtes Asset</td></tr>
+          </tbody>
+        </table>
+        <div class="kicker">Die linke Spalte hakt ihr in Minuten ab. Die <b>rechte Spalte ist der Lernstoff</b>.</div>
+      </div>
+    </section>
+
+    <!-- 8 FIVE PILLARS -->
+    <section class="slide" data-impulse data-sec="Das System">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Das System</div>
+      <h2 class="headline">Fünf Pfeiler</h2>
+      <div class="body">
+        <ol class="pillars">
+          <li><b>Verfassung</b>&nbsp;<span>— CLAUDE.md</span></li>
+          <li><b>Team</b>&nbsp;<span>— Subagenten mit eigenen Rechten</span></li>
+          <li><b>Gedächtnis</b>&nbsp;<span>— persistentes Memory</span></li>
+          <li><b>Werkzeuge</b>&nbsp;<span>— MCP &amp; Skills</span></li>
+          <li class="hl"><b>Nebenläufigkeit</b>&nbsp;<span>— geteilter State, mehrere Sessions</span></li>
+        </ol>
+        <div class="kicker">1–4 bauen das System. <b>5 hält es zusammen</b>, sobald mehr als eine Session läuft.</div>
+      </div>
+    </section>
+
+    <!-- 9 PILLAR 1 -->
+    <section class="slide" data-sec="Pfeiler 1 · Verfassung">
+      <div class="eyebrow"><span class="dot"></span>Pfeiler 1 · Verfassung</div>
+      <h2 class="headline sm"><code>CLAUDE.md</code> — die Projektverfassung</h2>
+      <div class="body">
+        <ul class="pts">
+          <li>Wird <b>jede Session geladen</b>. Regeln, die Standardverhalten überschreiben.</li>
+          <li>Routing-Matrix · Code-Regeln (User-Isolation, kein <code>console.*</code>) · Worktree-Pflicht · Shell-Patterns.</li>
+        </ul>
+        <div class="kicker">Es ist ein <b>Prompt, kein Wiki</b>. Faustregel: Muss sich die Regel ändern, sobald sich der Code ändert? → dann gehört sie in den Code.</div>
+      </div>
+    </section>
+
+    <!-- 10 PILLAR 2 TEAM -->
+    <section class="slide" data-sec="Pfeiler 2 · Team">
+      <div class="eyebrow"><span class="dot"></span>Pfeiler 2 · Team</div>
+      <h2 class="headline sm">Spezialisten mit eigenen Rechten</h2>
+      <div class="body-diagram">
+        <div>
+          <ul class="pts">
+            <li>~18 Spezialisten: frontend, services, backend, security, compliance, devops, architect, quality …</li>
+            <li>Jeder hat <b>eingeschränkte Werkzeuge</b>.</li>
+            <li><span class="k">Rechte = Sicherheit</span>: kein Werkzeug → kein Schaden.</li>
+          </ul>
+        </div>
+        <div class="diagram">
+          <svg viewBox="0 0 440 340" role="img" aria-label="Main-Agent über einem Raster aus Spezialisten">
+            <rect class="d-box-acc" x="150" y="10" width="140" height="46" rx="10"/>
+            <text class="d-t hd" x="220" y="38" text-anchor="middle">Main</text>
+            <path class="d-line" d="M220 56 V78"/>
+            <line class="d-line" x1="70" y1="78" x2="370" y2="78"/>
+            <path class="d-line" d="M70 78 V96 M150 78 V96 M220 78 V96 M290 78 V96 M370 78 V96"/>
+            <g font-size="13">
+              <rect class="d-box" x="20" y="96" width="100" height="58" rx="8"/><text class="d-t mono" x="70" y="122" text-anchor="middle">frontend</text><text class="d-t mut" x="70" y="140" text-anchor="middle">Edit·Write</text>
+              <rect class="d-box" x="130" y="96" width="100" height="58" rx="8"/><text class="d-t mono" x="180" y="122" text-anchor="middle">services</text><text class="d-t mut" x="180" y="140" text-anchor="middle">Edit·Write</text>
+              <rect class="d-box" x="240" y="96" width="100" height="58" rx="8"/><text class="d-t mono" x="290" y="122" text-anchor="middle">devops</text><text class="d-t mut" x="290" y="140" text-anchor="middle">+ Bash</text>
+              <!-- role labels are generic examples, not project-specific -->
+              <rect class="d-box-cool" x="20" y="168" width="100" height="58" rx="8"/><text class="d-t mono" x="70" y="194" text-anchor="middle">security</text><text class="d-t bad" x="70" y="212" text-anchor="middle" font-size="12">kein Write</text>
+              <rect class="d-box-cool" x="130" y="168" width="100" height="58" rx="8"/><text class="d-t mono" x="180" y="194" text-anchor="middle">compliance</text><text class="d-t bad" x="180" y="212" text-anchor="middle" font-size="12">kein Bash</text>
+              <rect class="d-box-cool" x="240" y="168" width="100" height="58" rx="8"/><text class="d-t mono" x="290" y="194" text-anchor="middle">architect</text><text class="d-t bad" x="290" y="212" text-anchor="middle" font-size="12">nur Docs</text>
+            </g>
+            <text class="d-t mut" x="220" y="262" text-anchor="middle">Review-Agenten dürfen prüfen — nicht schreiben.</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11 PILLAR 3 MEMORY -->
+    <section class="slide" data-sec="Pfeiler 3 · Gedächtnis">
+      <div class="eyebrow"><span class="dot"></span>Pfeiler 3 · Gedächtnis</div>
+      <h2 class="headline sm">Was Sessions überdauert</h2>
+      <div class="body">
+        <ul class="pts">
+          <li><b>Auto-Memory</b>: Index <code>MEMORY.md</code> + eine Datei pro Fakt (Frontmatter, verlinkt).</li>
+          <li><b>agent-memory</b>: pro Agent eine eigene Wissensbasis.</li>
+          <li>Aktiv <b>kuratiert</b> — falsche Memories werden gelöscht, nicht angehäuft. Kein Log.</li>
+        </ul>
+        <div class="kicker">Memory-Dateien <b>committen</b> — sonst sehen parallele Sessions die Lektion nie. (Kommt in Pfeiler 5 wieder.)</div>
+      </div>
+    </section>
+
+    <!-- 12 PILLAR 4 TOOLS -->
+    <section class="slide" data-sec="Pfeiler 4 · Werkzeuge">
+      <div class="eyebrow"><span class="dot"></span>Pfeiler 4 · Werkzeuge</div>
+      <h2 class="headline sm">Zugriff auf die echte Welt</h2>
+      <div class="body">
+        <ul class="pts">
+          <li><b>MCP-Server</b> — standardisierte Schnittstelle zu externen Systemen: Wiki, DB-Backend, Browser-DevTools, Zahlungsanbieter-Anbindung.</li>
+          <li><b>Skills</b> — paketierte, wiederverwendbare Abläufe.</li>
+          <li><b>Hooks</b> — das Werkzeug, mit dem wir Regeln <span class="k">erzwingen</span> (nächster Block).</li>
+        </ul>
+        <div class="kicker">Werkzeuge sind Fähigkeit <b>und</b> Angriffsfläche. Nur geben, was die Rolle wirklich braucht.</div>
+      </div>
+    </section>
+
+    <!-- 13 SOFT VS HARD -->
+    <section class="slide" data-impulse data-sec="Roter Faden">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Roter Faden</div>
+      <h2 class="headline sm">Weiche vs. harte Durchsetzung</h2>
+      <div class="body-diagram">
+        <div>
+          <ul class="pts">
+            <li>CLAUDE.md-Regel = <b>Bitte</b>. Das Modell <i>sollte</i> folgen — probabilistisch.</li>
+            <li>Hook = <b>Gesetz</b>. Die Harness <i>erzwingt</i> — deterministisch.</li>
+          </ul>
+          <div class="kicker">Die Kunst: nur die <b>wenigen katastrophalen</b> Regeln hart machen.</div>
+        </div>
+        <div class="diagram">
+          <svg viewBox="0 0 440 320" role="img" aria-label="Bitte lässt das Modell durch, Gesetz blockt hart">
+            <text class="d-t hd" x="110" y="26" text-anchor="middle">Bitte</text>
+            <text class="d-t mut" x="110" y="46" text-anchor="middle">CLAUDE.md</text>
+            <line class="d-line-dash" x1="110" y1="70" x2="110" y2="250"/>
+            <path class="d-flow" d="M40 160 H185" stroke-dasharray="0"/>
+            <path class="d-flow" d="M175 152 L188 160 L175 168 Z" fill="var(--accent)"/>
+            <text class="d-t mut" x="110" y="284" text-anchor="middle">Modell kann durchgehen</text>
+
+            <text class="d-t hd" x="330" y="26" text-anchor="middle">Gesetz</text>
+            <text class="d-t mut" x="330" y="46" text-anchor="middle">Hook</text>
+            <rect class="d-box-bad" x="322" y="70" width="16" height="180" rx="3"/>
+            <path class="d-flow" d="M258 160 H316" stroke="var(--collide)"/>
+            <g stroke="var(--collide)" stroke-width="2.4"><line x1="326" y1="150" x2="334" y2="158"/><line x1="334" y1="150" x2="326" y2="158"/></g>
+            <text class="d-t bad" x="330" y="284" text-anchor="middle">blockiert — egal was das Modell will</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14 HOOKS -->
+    <section class="slide" data-sec="Roter Faden · Hooks">
+      <div class="eyebrow"><span class="dot"></span>Roter Faden · Hooks</div>
+      <h2 class="headline sm">Hooks — Gesetze auf Werkzeug-Ebene</h2>
+      <div class="body">
+        <ul class="pts">
+          <li>Kennt ihr von git: <code>pre-commit</code> blockt einen Commit.</li>
+          <li>Claude-Code-Hooks blocken/prüfen <b>Tool-Aufrufe</b>: <code>PreToolUse</code>, <code>PostToolUse</code> …</li>
+          <li>Unser Beispiel: <code>block-main-edits.sh</code> blockt Edits an <code>src/</code> auf <code>main</code>.</li>
+        </ul>
+        <div class="kicker">git-hooks hängen an git-Events, Claude-Code-Hooks an <b>Tool-Events</b> — jedem Datei-Edit, jedem Bash-Aufruf. Die einzige <i>deterministische</i> Kontrolle im System.</div>
+      </div>
+    </section>
+
+    <!-- 15 WHICH RULE HARD -->
+    <section class="slide" data-sec="Roter Faden · Design-Prinzip">
+      <div class="eyebrow"><span class="dot"></span>Roter Faden · Design-Prinzip</div>
+      <h2 class="headline sm">Welche Regel macht man hart?</h2>
+      <div class="body-diagram">
+        <div>
+          <ul class="pts">
+            <li>Achse <b>Schaden</b> × <b>Verletzungswahrscheinlichkeit</b>.</li>
+            <li>Nur <span class="k">hoch × hoch</span> → Hook.</li>
+            <li>Rest → Leitplanke in CLAUDE.md.</li>
+          </ul>
+          <div class="kicker">~30 Regeln, nur eine Handvoll Hooks. Mechanik ist teuer — sparsam einsetzen.</div>
+        </div>
+        <div class="diagram">
+          <svg viewBox="0 0 340 300" role="img" aria-label="2x2-Matrix: nur hoher Schaden bei hoher Wahrscheinlichkeit wird ein Hook">
+            <line class="d-line" x1="60" y1="20" x2="60" y2="250"/>
+            <line class="d-line" x1="60" y1="250" x2="300" y2="250"/>
+            <line class="d-line-dash" x1="180" y1="20" x2="180" y2="250"/>
+            <line class="d-line-dash" x1="60" y1="135" x2="300" y2="135"/>
+            <rect class="d-box-acc" x="184" y="24" width="112" height="107" rx="8"/>
+            <text class="d-t acc" x="240" y="74" text-anchor="middle">HOOK</text>
+            <text class="d-t mut" x="240" y="94" text-anchor="middle" font-size="12">hart erzwingen</text>
+            <text class="d-t mut" x="120" y="82" text-anchor="middle" font-size="12">Leitplanke</text>
+            <text class="d-t mut" x="120" y="196" text-anchor="middle" font-size="12">Leitplanke</text>
+            <text class="d-t mut" x="240" y="196" text-anchor="middle" font-size="12">Leitplanke</text>
+            <text class="d-t mut" x="40" y="30" text-anchor="end" font-size="12">Schaden</text>
+            <text class="d-t mut" x="300" y="272" text-anchor="end" font-size="12">Wahrscheinlichkeit →</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 16 LIFECYCLE -->
+    <section class="slide" data-sec="Prozess">
+      <div class="eyebrow"><span class="dot"></span>Prozess</div>
+      <h2 class="headline sm">Wie eine Aufgabe wirklich durchläuft</h2>
+      <div class="body">
+        <div class="diagram" style="max-height:200px">
+          <svg viewBox="0 0 900 130" role="img" aria-label="Pipeline: Routing, Worktree, Handoff, Gates, Commit, PR">
+            <g font-size="15">
+              <rect class="d-box-cool" x="6" y="40" width="130" height="50" rx="9"/><text class="d-t hd" x="71" y="70" text-anchor="middle">Routing</text>
+              <rect class="d-box" x="156" y="40" width="130" height="50" rx="9"/><text class="d-t hd" x="221" y="70" text-anchor="middle">Worktree</text>
+              <rect class="d-box" x="306" y="40" width="130" height="50" rx="9"/><text class="d-t hd" x="371" y="70" text-anchor="middle">Handoff</text>
+              <rect class="d-box-acc" x="456" y="40" width="130" height="50" rx="9"/><text class="d-t hd" x="521" y="70" text-anchor="middle">Gates</text>
+              <rect class="d-box" x="606" y="40" width="130" height="50" rx="9"/><text class="d-t hd" x="671" y="70" text-anchor="middle">Commit</text>
+              <rect class="d-box" x="756" y="40" width="130" height="50" rx="9"/><text class="d-t hd" x="821" y="70" text-anchor="middle">PR</text>
+            </g>
+            <g class="d-flow"><path d="M136 65 H156"/><path d="M286 65 H306"/><path d="M436 65 H456"/><path d="M586 65 H606"/><path d="M736 65 H756"/></g>
+          </svg>
+        </div>
+        <div class="kicker">Nichts wird direkt auf <code>main</code> editiert. Nichts geht <b>ungeprüft</b> raus.</div>
+      </div>
+    </section>
+
+    <!-- 17 HANDOFF -->
+    <section class="slide" data-sec="Prozess · Handoff">
+      <div class="eyebrow"><span class="dot"></span>Prozess · Handoff</div>
+      <h2 class="headline sm">Die Übergabekette</h2>
+      <div class="body">
+        <div class="diagram" style="max-height:220px">
+          <svg viewBox="0 0 900 170" role="img" aria-label="Handoff-Kette von design über security bis sign-off">
+            <g font-size="14">
+              <rect class="d-box" x="10" y="20" width="120" height="46" rx="9"/><text class="d-t mono" x="70" y="48" text-anchor="middle">design</text>
+              <rect class="d-box" x="170" y="20" width="120" height="46" rx="9"/><text class="d-t mono" x="230" y="48" text-anchor="middle">frontend</text>
+              <rect class="d-box-cool" x="330" y="20" width="120" height="46" rx="9"/><text class="d-t mono" x="390" y="48" text-anchor="middle">security</text>
+              <rect class="d-box" x="490" y="20" width="120" height="46" rx="9"/><text class="d-t mono" x="550" y="48" text-anchor="middle">styling</text>
+              <rect class="d-box" x="650" y="20" width="120" height="46" rx="9"/><text class="d-t mono" x="710" y="48" text-anchor="middle">testing</text>
+              <rect class="d-box" x="330" y="104" width="120" height="46" rx="9"/><text class="d-t mono" x="390" y="132" text-anchor="middle">quality</text>
+              <rect class="d-box" x="490" y="104" width="120" height="46" rx="9"/><text class="d-t mono" x="550" y="132" text-anchor="middle">audit</text>
+              <rect class="d-box-cool" x="650" y="104" width="120" height="46" rx="9"/><text class="d-t mono" x="710" y="132" text-anchor="middle">sign-off</text>
+            </g>
+            <g class="d-flow">
+              <path d="M130 43 H170"/><path d="M290 43 H330"/><path d="M450 43 H490"/><path d="M610 43 H650"/>
+              <path d="M770 43 V85 H390 V104"/><path d="M450 127 H490"/><path d="M610 127 H650"/>
+            </g>
+          </svg>
+        </div>
+        <div class="kicker">Jede Übergabe ist explizit <b>und schriftlich</b> — direkte Folge der Kontext-Isolation. Der nächste Agent sieht nur, was als Datei vorliegt.</div>
+      </div>
+    </section>
+
+    <!-- 18 GATES -->
+    <section class="slide" data-sec="Prozess · Gates">
+      <div class="eyebrow"><span class="dot"></span>Prozess · Gates</div>
+      <h2 class="headline sm">Gates als Immunantwort</h2>
+      <div class="body">
+        <ul class="pts">
+          <li>Pre-Edit-Gate · Commit-Gate · Post-Agent-Gate · Review-Artifact-Regel.</li>
+          <li>Ein Mensch, der User-Isolation vergisst, <b>fällt im Review auf</b>.</li>
+          <li>Ein Agent produziert <b>200 Zeilen konsistenten Code</b> mit demselben Fehler — der nächste baut darauf auf.</li>
+        </ul>
+        <div class="kicker">Die Gates sind die Ersatz-Immunantwort für ein System, dem das menschliche „Moment mal…"-Bauchgefühl fehlt. <b>Keine Bürokratie — Notwendigkeit.</b></div>
+      </div>
+    </section>
+
+    <!-- 19 CONCURRENCY -->
+    <section class="slide" data-impulse data-sec="Pfeiler 5 · Nebenläufigkeit">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Pfeiler 5 · Nebenläufigkeit</div>
+      <h2 class="headline">Deine Dev-Umgebung ist ein verteiltes System</h2>
+      <div class="body">
+        <ul class="pts">
+          <li><b>Ein Dev, eine Session</b> → alles einfach.</li>
+          <li><b>4 Devs × 2 Sessions</b> auf einem Repo, einer Staging-DB, einer CI → Race Conditions.</li>
+        </ul>
+        <div class="kicker">Ihr <b>kennt</b> dieses Problem. Es trifft euch nur auf einer neuen Ebene.</div>
+      </div>
+    </section>
+
+    <!-- 20 TWO WINDOWS -->
+    <section class="slide" data-sec="Nebenläufigkeit · Demo">
+      <div class="eyebrow"><span class="dot"></span>Nebenläufigkeit · Demo</div>
+      <h2 class="headline sm">Zwei VS-Code-Fenster, dasselbe Repo</h2>
+      <div class="body-diagram">
+        <div class="diagram">
+          <svg viewBox="0 0 400 330" role="img" aria-label="Fenster A und B divergieren und kollidieren">
+            <text class="d-t hd" x="90" y="24" text-anchor="middle">Fenster A</text>
+            <text class="d-t hd" x="310" y="24" text-anchor="middle">Fenster B</text>
+            <line class="d-line" x1="90" y1="34" x2="90" y2="250"/>
+            <line class="d-line" x1="310" y1="34" x2="310" y2="250"/>
+            <rect class="d-box-acc" x="40" y="60" width="100" height="40" rx="7"/><text class="d-t mono" x="90" y="85" text-anchor="middle">editiert → v2</text>
+            <rect class="d-box" x="260" y="120" width="100" height="40" rx="7"/><text class="d-t mono" x="310" y="139" text-anchor="middle">liest v1</text>
+            <text class="d-t bad" x="310" y="155" text-anchor="middle" font-size="11">(stale)</text>
+            <text class="d-t mut" x="90" y="128" text-anchor="middle" font-size="12">committet nicht</text>
+            <rect class="d-box" x="260" y="180" width="100" height="40" rx="7"/><text class="d-t mono" x="310" y="205" text-anchor="middle">baut weiter</text>
+            <path class="d-flow" d="M90 250 C90 280 200 280 200 296" stroke="var(--collide)"/>
+            <path class="d-flow" d="M310 250 C310 280 200 280 200 296" stroke="var(--collide)"/>
+            <rect class="d-box-bad" x="150" y="296" width="100" height="30" rx="7"/><text class="d-t bad" x="200" y="316" text-anchor="middle">Kollision</text>
+          </svg>
+        </div>
+        <div>
+          <ul class="pts">
+            <li>A editiert, committet nicht. B liest den alten Stand, baut weiter.</li>
+            <li>Zusammenführen → <span class="k">Kollision</span>.</li>
+          </ul>
+          <div class="kicker cool">Derselbe Mechanismus wie im Opener — nur zwischen <b>Sessions</b> statt zwischen <b>Agenten</b>.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 21 COLLISION TABLE -->
+    <section class="slide" data-impulse data-sec="Nebenläufigkeit · Katalog">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Nebenläufigkeit · Katalog</div>
+      <h2 class="headline sm">Kollisionsebenen → altbekannte Prinzipien</h2>
+      <div class="body top">
+        <table class="cmp">
+          <colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+          <thead><tr><th>Ebene</th><th>Unser Symptom</th><th>Prinzip (kennt ihr)</th></tr></thead>
+          <tbody>
+            <tr><td class="new">Git / Dateisystem</td><td>2 Sessions editieren <code>src/</code>, uncommittet unsichtbar</td><td class="k">Isolation + oft committen</td></tr>
+            <tr><td class="new">Geteilter State</td><td>2 Sessions schreiben <code>PLAN.md</code></td><td class="k">Single-Writer</td></tr>
+            <tr><td class="new">ID-Kollision</td><td>beide greifen Migration <code>N</code></td><td class="k">kollisionsresistente IDs (N-b)</td></tr>
+            <tr><td class="new">Live-Ressource</td><td>beide wollen denselben Port</td><td class="k">Resource Lock (→ Fallback-Port)</td></tr>
+            <tr><td class="new">Optimistic</td><td>beide publizieren dasselbe Artefakt</td><td class="k">baseVersion / 409</td></tr>
+            <tr><td class="new">Idempotenz</td><td>Insert läuft doppelt</td><td class="k">ON DUPLICATE KEY UPDATE</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 22 REAL INCIDENTS -->
+    <section class="slide" data-sec="Nebenläufigkeit · Echte Vorfälle">
+      <div class="eyebrow"><span class="dot"></span>Nebenläufigkeit · Echte Vorfälle</div>
+      <h2 class="headline sm">Drei, die uns wirklich getroffen haben</h2>
+      <div class="body">
+        <div class="cards">
+          <div class="card">
+            <span class="tag">Stille Korruption</span>
+            <h4><code>INSERT IGNORE</code> → ~20 DB-Objekte kaputt</h4>
+            <p>File N+5 korrigiert File N — <code>IGNORE</code> verwarf die Korrektur schweigend. „Grün, keine Fehler, trotzdem kaputt."</p>
+            <span class="fix">Fix: ON DUPLICATE KEY UPDATE</span>
+          </div>
+          <div class="card">
+            <span class="tag">Falsche Sicherheit</span>
+            <h4>Dev-Server servierte 2× den falschen Worktree</h4>
+            <p>Geteilter Prozess an fremden Branch gepinnt (CWD nicht-deterministisch) — Briefing behauptete fälschlich „confirmed".</p>
+            <span class="fix">Die Kollision lügt dich an</span>
+          </div>
+          <div class="card">
+            <span class="tag">Ein Artefakt, zwei Autoren</span>
+            <h4>Nummern <code>N-b</code> / <code>N-a…d</code> + Datei-Drift</h4>
+            <p>Eine große Doku-Datei divergierte um über 100 Zeilen. Zwei Kopien, Edits an einer für die andere unsichtbar.</p>
+            <span class="fix">Buchstaben-Suffix als ID-Schutz</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 23 META -->
+    <section class="slide" data-sec="Nebenläufigkeit · Einsicht">
+      <div class="eyebrow"><span class="dot"></span>Nebenläufigkeit · Einsicht</div>
+      <h2 class="headline sm">CLAUDE.md <span style="color:var(--accent-ink)">ist</span> eine Distributed-Systems-Schicht</h2>
+      <div class="body">
+        <div class="chips">
+          <span class="chip"><b>Single-Writer</b> — ein Agent besitzt den Plan</span>
+          <span class="chip"><b>Mutex</b> — Command-Ownership</span>
+          <span class="chip"><b>Optimistic Lock</b> — baseVersion / 409</span>
+          <span class="chip"><b>Idempotenz</b> — ON DUPLICATE KEY UPDATE</span>
+          <span class="chip"><b>Resource Lock</b> — Port-Fallback</span>
+          <span class="chip"><b>Kollisionsfeste IDs</b> — Nummern-Suffixe</span>
+        </div>
+        <div class="kicker">…nur nicht so etikettiert. Ihr baut diese Primitive gerade selbst ein — ihr müsst sie nur <b>sehen und benennen</b>.</div>
+      </div>
+    </section>
+
+    <!-- 24 HANDS-ON INTRO -->
+    <section class="slide" data-sec="Hands-on">
+      <div class="eyebrow"><span class="dot"></span>Hands-on</div>
+      <h2 class="headline">Baut euer eigenes Mini-System</h2>
+      <div class="body">
+        <ul class="pts">
+          <li>Wegwerf-Repo, neutrale App. <b>Ein Vertreter jedes Pfeilers.</b></li>
+          <li>Wenn das läuft, habt ihr das <b>Muster</b> — skalieren kommt später.</li>
+          <li>Setup: VS Code + Claude Code, ein leeres Repo.</li>
+        </ul>
+        <div class="kicker">Nicht die Breite lernen, sondern den <b>minimalen selbsttragenden Kern</b>. Verstehen durch Nachbauen im Kleinen.</div>
+      </div>
+    </section>
+
+    <!-- 25 FIVE INGREDIENTS -->
+    <section class="slide" data-sec="Hands-on · Die 5 Zutaten">
+      <div class="eyebrow"><span class="dot"></span>Hands-on · Die 5 Zutaten</div>
+      <h2 class="headline sm">Fünf Dateien, ein System</h2>
+      <div class="body">
+        <ol class="pillars">
+          <li><b><code>CLAUDE.md</code></b>&nbsp;<span>— mit 3 Regeln</span></li>
+          <li><b>Zwei Subagenten</b>&nbsp;<span>— implementer + reviewer, <i>reviewer ohne Write</i></span></li>
+          <li class="hl"><b>Ein Gate als Hook</b>&nbsp;<span>— blockiere Edits auf <code>main</code></span></li>
+          <li><b>Eine Memory-Datei</b></li>
+          <li><b>Ein Worktree-Flow</b></li>
+        </ol>
+        <div class="kicker">Zutat 3 ist zugleich ein <b>Nebenläufigkeitsschutz</b>. Zutat 2 zeigt „Rechte = Sicherheit" am eigenen Leib. Schritt für Schritt im Kit → <code>hands-on-kit/README.md</code>.</div>
+      </div>
+    </section>
+
+    <!-- 26 SCALE -->
+    <section class="slide" data-sec="Abschluss · Skalieren">
+      <div class="eyebrow"><span class="dot"></span>Abschluss · Skalieren</div>
+      <h2 class="headline sm">Vom Mini zum echten System</h2>
+      <div class="body">
+        <ul class="pts">
+          <li>Wachst <b>entlang des Schmerzes</b>, nicht auf Vorrat. Jede Regel entsteht aus einem konkreten Vorfall.</li>
+          <li>Reihenfolge: erst <b>Routing + Worktrees</b> → dann <b>Hooks</b> für das Katastrophale → dann <b>Memory</b> → zuletzt <b>Nebenläufigkeits-Schutz</b>, wenn das Team wächst.</li>
+        </ul>
+        <div class="kicker">Nicht mit 18 Agenten und 30 Regeln starten. Unser System ist über Monate <b>reaktiv</b> gewachsen.</div>
+      </div>
+    </section>
+
+    <!-- 27 OPEN WOUNDS -->
+    <section class="slide" data-sec="Abschluss · Ehrlichkeit">
+      <div class="eyebrow"><span class="dot"></span>Abschluss · Ehrlichkeit</div>
+      <h2 class="headline sm">Was wir noch <span style="color:var(--collide)">nicht</span> gelöst haben</h2>
+      <div class="body">
+        <ul class="pts">
+          <li><b>Geteilte Staging-Datenbank</b> — mehrere Sessions, eine DB.</li>
+          <li><b>CI-Runner-Contention</b> — begrenzte, geteilte Runner.</li>
+          <li><b>stale-base-Plan-Gate-Deadlocks</b> — Branch hinter main.</li>
+          <li><b>Build-Datei-Drift</b> (z. B. Dockerfile-COPY) — zwei gekoppelte Dateien, keine CI-Prüfung (3× aufgetreten).</li>
+        </ul>
+        <div class="kicker">Ehrlichkeit &gt; geglättete Erfolgsstory. Ihr könnt unsere offenen Baustellen von Anfang an <b>vermeiden</b>.</div>
+      </div>
+    </section>
+
+    <!-- 28 TAKEAWAYS -->
+    <section class="slide" data-impulse data-sec="Abschluss">
+      <div class="tag-impuls">Impuls</div>
+      <div class="eyebrow"><span class="dot"></span>Abschluss</div>
+      <h2 class="headline">Was ihr mitnehmt</h2>
+      <div class="body">
+        <ul class="pts">
+          <li><b>Agenten sind isolierte Mitarbeiter</b> — Übergaben müssen explizit sein.</li>
+          <li><b>CLAUDE.md bittet, Hooks erzwingen</b> — macht das Katastrophale hart.</li>
+          <li><b>Ab Session zwei ist es ein verteiltes System</b> — behandelt es wie eines.</li>
+          <li><b>Jede Regel ist geronnene Erfahrung</b>, kein Ideal.</li>
+        </ul>
+        <div class="kicker">Jetzt baut ihr es. → <code>hands-on-kit/</code></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div id="hud">
+  <span class="sec" id="sec">—</span>
+  <span class="right">
+    <button id="mode-badge" title="Modus umschalten (M)">Workshop</button>
+    <button class="txt" onclick="toggleTheme()" title="Theme (T)">Theme</button>
+    <span id="counter" title="Übersicht (Ü)">1 / 28</span>
+  </span>
+</div>
+
+<div id="ovl" role="dialog" aria-label="Folien-Übersicht">
+  <h2>Übersicht — <span id="ovl-mode">Workshop</span></h2>
+  <div class="grid" id="ovl-grid"></div>
+</div>
+
+<script>
+(function(){
+  var all = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var mode = 'workshop';           // 'workshop' | 'impuls'
+  var idx = 0;
+  var bar = document.getElementById('bar');
+  var stage = document.getElementById('stage');
+  var secEl = document.getElementById('sec');
+  var counterEl = document.getElementById('counter');
+  var modeBadge = document.getElementById('mode-badge');
+  var ovl = document.getElementById('ovl');
+  var ovlGrid = document.getElementById('ovl-grid');
+  var ovlMode = document.getElementById('ovl-mode');
+
+  function visible(){ return mode==='impuls' ? all.filter(function(s){return s.hasAttribute('data-impulse');}) : all; }
+  function titleOf(s){ var h=s.querySelector('h1,.headline'); return h?h.textContent.trim():''; }
+
+  function render(){
+    var vis = visible();
+    if(idx>=vis.length) idx=vis.length-1; if(idx<0) idx=0;
+    all.forEach(function(s){ s.classList.remove('active'); });
+    var cur = vis[idx];
+    if(cur) cur.classList.add('active');
+    bar.style.width = ((idx+1)/vis.length*100)+'%';
+    secEl.textContent = cur?cur.getAttribute('data-sec'):'';
+    counterEl.textContent = (idx+1)+' / '+vis.length;
+    modeBadge.textContent = mode==='impuls' ? 'Impuls' : 'Workshop';
+    try{ history.replaceState(null,'','#'+(idx+1)); }catch(e){}
+  }
+  function go(n){ var vis=visible(); idx=Math.max(0,Math.min(vis.length-1,n)); render(); }
+  function next(){ go(idx+1); } function prev(){ go(idx-1); }
+
+  function setMode(m){
+    var vis=visible(); var curSlide=vis[idx];
+    mode=m;
+    var nv=visible(); var ni=nv.indexOf(curSlide);
+    idx = ni>=0 ? ni : 0;              // keep position if the slide exists in new mode
+    render();
+  }
+  function toggleMode(){ setMode(mode==='impuls'?'workshop':'impuls'); }
+  window.toggleTheme=function(){
+    var root=document.documentElement;
+    var cur=root.getAttribute('data-theme');
+    if(!cur){ cur = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'; }
+    root.setAttribute('data-theme', cur==='dark'?'light':'dark');
+  };
+
+  function scale(){
+    var pad=16;
+    var s=Math.min((innerWidth-pad)/1280,(innerHeight-70-pad)/720);
+    s=Math.min(s,1.0);
+    stage.style.transform='scale('+s+')';
+  }
+
+  function buildOverview(){
+    ovlGrid.innerHTML='';
+    var vis=visible();
+    ovlMode.textContent = mode==='impuls'?'Impuls':'Workshop';
+    vis.forEach(function(s,i){
+      var b=document.createElement('button');
+      if(s.hasAttribute('data-impulse')) b.className='imp';
+      b.innerHTML='<span class="n">'+(i+1)+(s.hasAttribute('data-impulse')?' · Impuls':'')+'</span>'+titleOf(s);
+      b.onclick=function(){ go(i); closeOvl(); };
+      ovlGrid.appendChild(b);
+    });
+  }
+  function openOvl(){ buildOverview(); ovl.classList.add('open'); }
+  function closeOvl(){ ovl.classList.remove('open'); }
+  function toggleOvl(){ ovl.classList.contains('open')?closeOvl():openOvl(); }
+  counterEl.onclick=toggleOvl;
+  modeBadge.onclick=toggleMode;
+
+  document.addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=e.key;
+    if(ovl.classList.contains('open')){ if(k==='Escape'||k==='ü'||k==='Ü') closeOvl(); return; }
+    if(k==='ArrowRight'||k===' '||k==='PageDown'){ e.preventDefault(); next(); }
+    else if(k==='ArrowLeft'||k==='PageUp'){ e.preventDefault(); prev(); }
+    else if(k==='Home'){ go(0); }
+    else if(k==='End'){ go(visible().length-1); }
+    else if(k==='m'||k==='M'){ toggleMode(); }
+    else if(k==='t'||k==='T'){ toggleTheme(); }
+    else if(k==='ü'||k==='Ü'){ toggleOvl(); }
+    else if(k==='f'||k==='F'){ if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}else{document.exitFullscreen&&document.exitFullscreen();} }
+  });
+
+  // click navigation on the stage (right half = next, left = prev)
+  stage.addEventListener('click',function(e){
+    var r=stage.getBoundingClientRect();
+    if(e.clientX > r.left + r.width*0.5) next(); else prev();
+  });
+
+  addEventListener('resize',scale);
+  var h=parseInt((location.hash||'').replace('#',''),10);
+  if(h && h>=1) idx=h-1;
+  scale(); render();
+})();
+</script>
